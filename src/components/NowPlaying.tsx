@@ -1,0 +1,105 @@
+import { useQuery } from "@tanstack/react-query";
+import { fetchNowPlaying, formatTime } from "@/lib/api";
+import { Music, Pause, Disc3 } from "lucide-react";
+
+export function NowPlaying() {
+  const { data } = useQuery({
+    queryKey: ["now-playing"],
+    queryFn: fetchNowPlaying,
+    refetchInterval: 2000,
+  });
+
+  if (!data?.playing) {
+    return (
+      <div className="glass-card rounded-xl p-6 text-center">
+        <div className="relative w-16 h-16 mx-auto mb-3">
+          <Disc3 className="w-16 h-16 text-muted-foreground/30" />
+        </div>
+        <p className="text-muted-foreground font-medium">No song playing</p>
+        <p className="text-xs text-muted-foreground/60 mt-1">Request a song to get started</p>
+      </div>
+    );
+  }
+
+  const progress = data.duration ? (data.current_position! / data.duration) * 100 : 0;
+
+  return (
+    <div className="glass-card rounded-xl p-4">
+      <div className="flex gap-4">
+        {/* Album Art */}
+        <div className="relative w-20 h-20 rounded-lg overflow-hidden bg-secondary shrink-0 group">
+          {data.album_art_url ? (
+            <img
+              src={data.album_art_url}
+              alt={data.album_name || "Album"}
+              className={`w-full h-full object-cover transition-transform ${
+                data.is_playing ? "group-hover:scale-110" : ""
+              }`}
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <Music className="w-8 h-8 text-muted-foreground" />
+            </div>
+          )}
+          {/* Playing overlay */}
+          {data.is_playing && (
+            <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="flex items-end gap-0.5 h-4">
+                <span className="w-1 bg-white rounded-full animate-[bounce_0.5s_ease-in-out_infinite]" style={{ height: '60%' }} />
+                <span className="w-1 bg-white rounded-full animate-[bounce_0.5s_ease-in-out_infinite_0.1s]" style={{ height: '100%' }} />
+                <span className="w-1 bg-white rounded-full animate-[bounce_0.5s_ease-in-out_infinite_0.2s]" style={{ height: '40%' }} />
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Song Info */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <h3 className="font-semibold truncate">{data.song_name}</h3>
+              <p className="text-sm text-muted-foreground truncate">{data.artist_name}</p>
+              {data.album_name && (
+                <p className="text-xs text-muted-foreground/70 truncate">{data.album_name}</p>
+              )}
+            </div>
+            <div className="shrink-0">
+              {data.is_playing ? (
+                <div className="flex items-end gap-0.5 h-4">
+                  <span className="w-1 bg-primary rounded-full animate-[musicBar_0.5s_ease-in-out_infinite]" style={{ height: '50%' }} />
+                  <span className="w-1 bg-primary rounded-full animate-[musicBar_0.5s_ease-in-out_infinite_0.1s]" style={{ height: '100%' }} />
+                  <span className="w-1 bg-primary rounded-full animate-[musicBar_0.5s_ease-in-out_infinite_0.2s]" style={{ height: '30%' }} />
+                </div>
+              ) : (
+                <Pause className="w-4 h-4 text-muted-foreground" />
+              )}
+            </div>
+          </div>
+
+          {/* Progress Bar */}
+          <div className="mt-3">
+            <div className="group relative h-1.5 bg-secondary rounded-full overflow-hidden cursor-pointer hover:h-2 transition-all">
+              <div
+                className="h-full bg-primary rounded-full transition-all duration-500"
+                style={{ width: `${progress}%` }}
+              />
+              {/* Hover indicator */}
+              <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-primary rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg" style={{ left: `calc(${progress}% - 6px)` }} />
+            </div>
+            <div className="flex justify-between text-xs text-muted-foreground mt-1.5">
+              <span>{formatTime(data.current_position || 0)}</span>
+              <span>{formatTime(data.duration || 0)}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Queue info */}
+      {data.queue_size !== undefined && data.queue_size > 0 && (
+        <div className="mt-3 pt-3 border-t border-border/50 text-xs text-muted-foreground text-center">
+          {data.queue_size} song{data.queue_size !== 1 ? 's' : ''} in queue
+        </div>
+      )}
+    </div>
+  );
+}

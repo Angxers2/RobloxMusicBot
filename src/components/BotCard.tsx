@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Bot, getJoinUrl, formatLastSeen } from "@/lib/api";
 import { ControlPanelModal } from "./ControlPanelModal";
-import { Settings2, Users, Music2, ExternalLink } from "lucide-react";
+import { Settings2, Users, Music2, ExternalLink, Disc3 } from "lucide-react";
 
 interface BotCardProps {
   bot: Bot;
@@ -63,22 +63,55 @@ export function BotCard({ bot }: BotCardProps) {
           </div>
         </div>
 
-        {/* Now Playing */}
+        {/* Now Playing with Album Art */}
         {songDisplay && (
-          <div className="mt-4 py-2.5 px-3 rounded-lg bg-secondary/50 border border-border/50">
-            <div className="flex items-center gap-2">
-              <Music2 className={`w-4 h-4 shrink-0 ${bot.is_playing ? "text-primary" : "text-muted-foreground"}`} />
+          <div className="mt-4 py-3 px-3 rounded-xl bg-gradient-to-br from-secondary/60 to-secondary/30 border border-border/50 backdrop-blur-sm">
+            <div className="flex items-center gap-3">
+              {/* Album Art */}
+              <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-secondary/50 shrink-0 group">
+                {bot.current_song_album_art ? (
+                  <img
+                    src={bot.current_song_album_art}
+                    alt="Album"
+                    className={`w-full h-full object-cover transition-transform duration-300 ${
+                      bot.is_playing ? "group-hover:scale-110" : ""
+                    }`}
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5">
+                    <Disc3 className={`w-6 h-6 text-primary/60 ${bot.is_playing ? "animate-spin" : ""}`} style={{ animationDuration: "3s" }} />
+                  </div>
+                )}
+                {/* Playing overlay */}
+                {bot.is_playing && (
+                  <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                    <div className="flex items-end gap-0.5 h-4">
+                      <span className="w-1 bg-white rounded-full animate-[musicBar_0.5s_ease-in-out_infinite]" style={{ height: '50%' }} />
+                      <span className="w-1 bg-white rounded-full animate-[musicBar_0.5s_ease-in-out_infinite_0.1s]" style={{ height: '100%' }} />
+                      <span className="w-1 bg-white rounded-full animate-[musicBar_0.5s_ease-in-out_infinite_0.2s]" style={{ height: '40%' }} />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Song Info */}
               <div className="min-w-0 flex-1">
-                <p className="text-xs text-muted-foreground mb-0.5">
+                <p className="text-[10px] text-muted-foreground mb-0.5 flex items-center gap-1">
+                  <Music2 className={`w-3 h-3 ${bot.is_playing ? "text-primary" : ""}`} />
                   {bot.is_playing ? "Now Playing" : "Paused"}
                 </p>
-                <p className="text-sm font-medium truncate">{songDisplay}</p>
+                <p className="text-sm font-semibold truncate">{songDisplay}</p>
+                {bot.current_song_artist && (
+                  <p className="text-xs text-muted-foreground truncate">{bot.current_song_artist}</p>
+                )}
               </div>
+
+              {/* Music Bars */}
               {bot.is_playing && (
-                <div className="flex items-end gap-0.5 h-3 shrink-0">
-                  <span className="w-0.5 bg-primary rounded-full animate-[musicBar_0.5s_ease-in-out_infinite]" style={{ height: '40%' }} />
-                  <span className="w-0.5 bg-primary rounded-full animate-[musicBar_0.5s_ease-in-out_infinite_0.1s]" style={{ height: '100%' }} />
-                  <span className="w-0.5 bg-primary rounded-full animate-[musicBar_0.5s_ease-in-out_infinite_0.2s]" style={{ height: '60%' }} />
+                <div className="flex items-end gap-0.5 h-4 shrink-0">
+                  <span className="w-1 bg-primary rounded-full animate-[musicBar_0.5s_ease-in-out_infinite]" style={{ height: '40%' }} />
+                  <span className="w-1 bg-primary rounded-full animate-[musicBar_0.5s_ease-in-out_infinite_0.1s]" style={{ height: '100%' }} />
+                  <span className="w-1 bg-primary rounded-full animate-[musicBar_0.5s_ease-in-out_infinite_0.2s]" style={{ height: '60%' }} />
                 </div>
               )}
             </div>

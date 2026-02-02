@@ -12,6 +12,8 @@ export interface Bot {
   players_max: number;
   is_full: boolean;
   current_song: string | null;
+  current_song_artist?: string | null;
+  current_song_album_art?: string | null;
   is_playing: boolean;
   online: boolean;
   join_url: string;

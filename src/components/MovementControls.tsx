@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { sendWebCommand } from "@/lib/api";
 import { Button } from "@/components/ui/button";
-import { Gamepad2 } from "lucide-react";
+import { Gamepad2, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, ArrowUpFromLine } from "lucide-react";
 
 interface MovementControlsProps {
   botId: string;
@@ -28,7 +28,6 @@ export function MovementControls({ botId, username }: MovementControlsProps) {
   const keysRef = useRef(keys);
   keysRef.current = keys;
 
-  // Send movement state when keys change
   const sendMovement = useCallback(async () => {
     const currentKeys = keysRef.current;
     if (Object.values(currentKeys).some((v) => v)) {
@@ -36,18 +35,16 @@ export function MovementControls({ botId, username }: MovementControlsProps) {
     }
   }, [botId, username]);
 
-  // Periodic movement updates while keys are pressed
   useEffect(() => {
     if (!isActive) return;
 
     const interval = setInterval(() => {
       sendMovement();
-    }, 100); // 10 times per second
+    }, 100);
 
     return () => clearInterval(interval);
   }, [isActive, sendMovement]);
 
-  // Keyboard event handlers
   useEffect(() => {
     if (!isActive) return;
 
@@ -81,7 +78,6 @@ export function MovementControls({ botId, username }: MovementControlsProps) {
     };
   }, [isActive]);
 
-  // Reset keys when deactivated
   useEffect(() => {
     if (!isActive) {
       setKeys({ w: false, a: false, s: false, d: false, space: false });
@@ -96,103 +92,100 @@ export function MovementControls({ botId, username }: MovementControlsProps) {
     setKeys((prev) => ({ ...prev, [key]: false }));
   };
 
-  if (!isActive) {
-    return (
-      <div className="glass-card rounded-xl p-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Gamepad2 className="w-5 h-5 text-muted-foreground" />
-            <div>
-              <h4 className="text-sm font-medium">Movement Controls</h4>
-              <p className="text-xs text-muted-foreground">Privileged Only</p>
-            </div>
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setIsActive(true)}
-          >
-            Enable
-          </Button>
-        </div>
-      </div>
-    );
-  }
+  const DirectionButton = ({
+    direction,
+    keyName,
+    icon: Icon,
+    className = "",
+  }: {
+    direction: string;
+    keyName: keyof Keys;
+    icon: React.ElementType;
+    className?: string;
+  }) => (
+    <button
+      className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all duration-150 ${
+        keys[keyName]
+          ? "bg-primary text-white shadow-lg shadow-primary/40 scale-95"
+          : "bg-secondary/80 text-muted-foreground hover:bg-secondary hover:text-foreground"
+      } ${className}`}
+      onMouseDown={() => handleMouseDown(keyName)}
+      onMouseUp={() => handleMouseUp(keyName)}
+      onMouseLeave={() => handleMouseUp(keyName)}
+      onTouchStart={(e) => {
+        e.preventDefault();
+        handleMouseDown(keyName);
+      }}
+      onTouchEnd={() => handleMouseUp(keyName)}
+    >
+      <Icon className="w-5 h-5" />
+    </button>
+  );
 
   return (
-    <div className="glass-card rounded-xl p-4">
+    <div className="glass-card rounded-xl p-5">
+      {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <Gamepad2 className="w-5 h-5 text-primary" />
+          <div className={`p-2 rounded-lg ${isActive ? "bg-primary/20" : "bg-secondary"}`}>
+            <Gamepad2 className={`w-4 h-4 ${isActive ? "text-primary" : "text-muted-foreground"}`} />
+          </div>
           <div>
-            <h4 className="text-sm font-medium">Movement Active</h4>
-            <p className="text-xs text-muted-foreground">Use WASD or buttons</p>
+            <h4 className="text-sm font-semibold">Movement</h4>
+            <p className="text-[10px] text-muted-foreground">
+              {isActive ? "Use WASD or buttons" : "Privileged Only"}
+            </p>
           </div>
         </div>
         <Button
-          variant="destructive"
+          variant={isActive ? "destructive" : "outline"}
           size="sm"
-          onClick={() => setIsActive(false)}
+          onClick={() => setIsActive(!isActive)}
+          className={`h-8 ${!isActive && "hover:bg-primary hover:text-white hover:border-primary"}`}
         >
-          Disable
+          {isActive ? "Disable" : "Enable"}
         </Button>
       </div>
 
-      {/* WASD Grid */}
-      <div className="flex flex-col items-center gap-1">
-        <Button
-          variant={keys.w ? "default" : "outline"}
-          size="sm"
-          className="w-12 h-12 font-bold"
-          onMouseDown={() => handleMouseDown("w")}
-          onMouseUp={() => handleMouseUp("w")}
-          onMouseLeave={() => handleMouseUp("w")}
-        >
-          W
-        </Button>
-        <div className="flex gap-1">
-          <Button
-            variant={keys.a ? "default" : "outline"}
-            size="sm"
-            className="w-12 h-12 font-bold"
-            onMouseDown={() => handleMouseDown("a")}
-            onMouseUp={() => handleMouseUp("a")}
-            onMouseLeave={() => handleMouseUp("a")}
+      {/* Controls */}
+      {isActive && (
+        <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
+          {/* Direction Pad */}
+          <div className="flex flex-col items-center gap-1">
+            <DirectionButton direction="up" keyName="w" icon={ChevronUp} />
+            <div className="flex gap-1">
+              <DirectionButton direction="left" keyName="a" icon={ChevronLeft} />
+              <DirectionButton direction="down" keyName="s" icon={ChevronDown} />
+              <DirectionButton direction="right" keyName="d" icon={ChevronRight} />
+            </div>
+          </div>
+
+          {/* Jump Button */}
+          <button
+            className={`w-full h-10 rounded-xl flex items-center justify-center gap-2 transition-all duration-150 ${
+              keys.space
+                ? "bg-primary text-white shadow-lg shadow-primary/40 scale-[0.98]"
+                : "bg-secondary/80 text-muted-foreground hover:bg-secondary hover:text-foreground"
+            }`}
+            onMouseDown={() => handleMouseDown("space")}
+            onMouseUp={() => handleMouseUp("space")}
+            onMouseLeave={() => handleMouseUp("space")}
+            onTouchStart={(e) => {
+              e.preventDefault();
+              handleMouseDown("space");
+            }}
+            onTouchEnd={() => handleMouseUp("space")}
           >
-            A
-          </Button>
-          <Button
-            variant={keys.s ? "default" : "outline"}
-            size="sm"
-            className="w-12 h-12 font-bold"
-            onMouseDown={() => handleMouseDown("s")}
-            onMouseUp={() => handleMouseUp("s")}
-            onMouseLeave={() => handleMouseUp("s")}
-          >
-            S
-          </Button>
-          <Button
-            variant={keys.d ? "default" : "outline"}
-            size="sm"
-            className="w-12 h-12 font-bold"
-            onMouseDown={() => handleMouseDown("d")}
-            onMouseUp={() => handleMouseUp("d")}
-            onMouseLeave={() => handleMouseUp("d")}
-          >
-            D
-          </Button>
+            <ArrowUpFromLine className="w-4 h-4" />
+            <span className="text-sm font-medium">Jump</span>
+          </button>
+
+          {/* Keyboard hint */}
+          <p className="text-[10px] text-center text-muted-foreground/60">
+            Press WASD + Space on keyboard for controls
+          </p>
         </div>
-        <Button
-          variant={keys.space ? "default" : "outline"}
-          size="sm"
-          className="w-full max-w-[156px] h-10 mt-1"
-          onMouseDown={() => handleMouseDown("space")}
-          onMouseUp={() => handleMouseUp("space")}
-          onMouseLeave={() => handleMouseUp("space")}
-        >
-          Jump
-        </Button>
-      </div>
+      )}
     </div>
   );
 }
